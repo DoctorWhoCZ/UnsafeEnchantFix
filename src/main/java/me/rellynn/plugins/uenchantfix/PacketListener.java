@@ -5,12 +5,14 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.GameMode;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -32,12 +34,14 @@ public class PacketListener extends PacketAdapter {
         if (item != null && item.hasItemMeta()) {
             ItemMeta meta = item.getItemMeta();
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-            List<String> lore = new ArrayList<>();
+            List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<String>();
+            Collections.reverse(lore);
             for (Map.Entry<Enchantment, Integer> entry : meta.getEnchants().entrySet()) {
                 TextComponent component = new TextComponent(plugin.getTranslation(entry.getKey()), new TextComponent(" " + entry.getValue()));
                 component.setColor(ChatColor.GRAY);
                 lore.add(component.toLegacyText());
             }
+            Collections.reverse(lore);
             meta.setLore(lore);
             item.setItemMeta(meta);
         }
@@ -45,6 +49,9 @@ public class PacketListener extends PacketAdapter {
 
     @Override
     public void onPacketSending(PacketEvent evt) {
+        if (evt.getPlayer().getGameMode() == GameMode.CREATIVE) {
+            return;
+        }
         PacketContainer packet = evt.getPacket();
         if (packet.getType() == SET_SLOT) {
             fixItemStack(packet.getItemModifier().read(0));
